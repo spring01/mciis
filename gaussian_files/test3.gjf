@@ -1,0 +1,12 @@
+%chk=test3.chk
+#p ub3lyp/6-31g guess=core symmetry=none IOp(5/18=-2) IOp(5/10=-1) IOp(5/22=10)
+
+title
+
+-1 2
+8 0.0 0.0 0.0
+1 0.0 0.0 1.0
+1 0.0 1.0 0.0
+
+
+

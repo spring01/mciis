@@ -1,0 +1,10 @@
+%chk=crc1.chk
+#p rb3lyp/6-31g guess=core symmetry=none
+
+Title Card Required
+
+0 1
+ Cr                0.00000000    0.00000000    0.00000000
+ C                 0.00000000    0.00000000    2.00000000
+
+
