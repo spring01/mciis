@@ -50,10 +50,10 @@ classdef UHF < RHF
             end
         end
         
-        function elecEnergy = ElecEnergy(obj, fockVec, densVec)
+        function elecEnergy = SCFEnergy(obj, fockVec, densVec)
             elecEnergy = (reshape(obj.coreHamilt, [], 1)' * sum(densVec, 2) ...
                 + fockVec(:, 1)' * densVec(:, 1) ...
-                + fockVec(:, 2)' * densVec(:, 2)) / 2;
+                + fockVec(:, 2)' * densVec(:, 2)) / 2 + obj.nucRepEnergy;
         end
         
         function newVec = Damping(~, dampingCoeff, vec, oldVec)

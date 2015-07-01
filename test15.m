@@ -7,12 +7,12 @@ method = 'b3lyp';
 basisSet = 'sto-3g';
 orbital = rand(7) - 0.5;
 
+fileStr = G09InputStr(chargeMult, cart, method, basisSet, orbital);
+gjfFile = fopen('temp.gjf', 'w');
+fprintf(gjfFile, '%s', fileStr);
+fclose(gjfFile);
+system('g09 temp.gjf');
 
-% fileStr = G09InputStr(chargeMult, cart, method, basisSet, orbital);
-% gjfFile = fopen('temp.gjf', 'w');
-% fprintf(gjfFile, '%s', fileStr);
-% fclose(gjfFile);
-% system('g09 temp.gjf');
+G09FileIsValid()
 
-logFile = fopen('temp.log');
-
+% G09ReadMatrix({'overlap', 'coreHamilt', 'fockAlpha'})

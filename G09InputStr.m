@@ -1,6 +1,6 @@
 function fileStr = G09InputStr(chargeMult, cartesian, method, basisSet, orbital)
 newLine = sprintf('\n');
-printCommand = sprintf('%s\n', ['#p ', method, '/', basisSet ,' guess=cards symmetry=none population=full scf(maxcycle=1) iop(5/33=3) iop(3/33=1) iop(5/13=1)']);
+printCommand = sprintf('%s\n', ['#p ', method, '/', basisSet ,' guess=cards symmetry=none population=full scf(maxcycle=1, NoVarAcc) iop(5/33=3) iop(3/33=1) iop(5/13=1)']);
 printTitle = sprintf('%s\n', 'iop(5/33=3): print fock; iop(3/33=1): print 1-e integrals; iop(5/13=1): do not terminate when scf fails');
 printMol = sprintf('%d %d\n', chargeMult);
 for iAtom = 1:size(cartesian, 1)

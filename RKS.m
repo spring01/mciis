@@ -33,8 +33,8 @@ classdef RKS < RHF
             fockVec = reshape(obj.coreHamilt, [], 1) + reshape(gMat, [], 1);
         end
         
-        function elecEnergy = ElecEnergy(obj, fockVec, densVec)
-            elecEnergy = obj.ElecEnergy@RHF(fockVec, densVec) ...
+        function elecEnergy = SCFEnergy(obj, fockVec, densVec)
+            elecEnergy = obj.SCFEnergy@RHF(fockVec, densVec) ...
                 - reshape(obj.currentV, 1, []) * densVec ...
                 + obj.matpsi2.DFT_EnergyXC();
         end
