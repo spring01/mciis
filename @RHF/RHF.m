@@ -61,8 +61,12 @@ classdef RHF < handle
             orbital = inv_S_Half * orbitalOtho(:, ascend_order);
         end
         
-        function elecEnergy = SCFEnergy(obj, fockVec, densVec)
-            elecEnergy = (reshape(obj.coreHamilt, [], 1) + fockVec)'*densVec + obj.nucRepEnergy;
+        function energy = SCFEnergy(obj, fockVec, densVec)
+            energy = (reshape(obj.coreHamilt, [], 1) + fockVec)'*densVec + obj.nucRepEnergy;
+        end
+        
+        function energy = DampedSCFEnergy(obj, fockVec, densVec, ~)
+            energy = obj.SCFEnergy(fockVec, densVec);
         end
         
         function newVec = Damping(~, dampingCoeff, vec, oldVec)

@@ -9,13 +9,13 @@ classdef G09RSCF < RHF
     methods
         
         function obj = G09RSCF(info)
-            fileStr = G09RSCF.G09InputStr(info.chargeMult, info.cartesian, info.method, info.basisSet);
-            G09RSCF.RunG09(fileStr);
+            G09RSCF.RunG09(info);
             matrices = G09RSCF.G09ReadMatrices({'overlap', 'coreHamilt'});
             properties.overlapMat = matrices{1};
             properties.coreHamilt = matrices{2};
-            properties.numElectrons = G09RSCF.G09ReadNumElectrons();
-            properties.nucRepEnergy = G09RSCF.G09ReadEnergy('NucRep');
+            scalars = G09RSCF.G09ReadScalars({'NumElectrons', 'NucRepEnergy'});
+            properties.numElectrons = scalars{1};
+            properties.nucRepEnergy = scalars{2};
             properties.matpsi2 = [];
             obj@RHF(properties);
             obj.info = info;
@@ -27,32 +27,26 @@ classdef G09RSCF < RHF
         
         function fockVec = OrbToFockVec(obj, orbital)
             obj.info.orbAlpha = orbital;
-            fileStr = G09RSCF.G09InputStr(obj.info);
-            G09RSCF.RunG09(fileStr);
+            G09RSCF.RunG09(obj.info);
             matrices = G09RSCF.G09ReadMatrices({'fockAlpha'});
             fockVec = reshape(matrices{1}, [], 1);
         end
         
         function elecEnergy = SCFEnergy(obj, fockVec, densVec)
-            fileStr = G09RSCF.G09InputStr(obj.info);
-            G09RSCF.RunG09(fileStr);
+            G09RSCF.RunG09(obj.info);
         end
+        
+        
         
     end
     
     methods (Static, Access = protected)
         
-        fileStr = G09InputStr(info);
-        fileIsValid = G09FileIsValid();
-        energy = G09ReadEnergy(type);
+        scalars = G09ReadScalars(types);
         matrices = G09ReadMatrices(types);
-        numElectrons = G09ReadNumElectrons();
         
-    end
-    
-    methods (Static, Access = private)
-        
-        function RunG09(fileStr)
+        function RunG09(info)
+            fileStr = G09RSCF.G09InputStr(info);
             gjfFile = fopen('temp.gjf', 'w');
             fprintf(gjfFile, '%s', fileStr);
             fclose(gjfFile);
@@ -61,6 +55,13 @@ classdef G09RSCF < RHF
                 throw(MException('G09RSCF:G09RSCF', 'g09 did not terminate correctly'));
             end
         end
+        
+    end
+    
+    methods (Static, Access = private)
+        
+        fileStr = G09InputStr(info);
+        fileIsValid = G09FileIsValid();
         
     end
     

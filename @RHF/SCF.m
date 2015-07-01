@@ -19,13 +19,13 @@ for iter = 1:obj.maxSCFIter
     fockVec = obj.OrbToFockVec(orbital);
     energy = obj.SCFEnergy(fockVec, densVec);
     
-%     % damping at the 2nd iteration
-%     if(iter == 2)
-%         dampingCoeff = 0.25;
-%         fockVec = obj.Damping(dampingCoeff, fockVec, oldFockVec);
-%         densVec = obj.Damping(dampingCoeff, densVec, oldDensVec);
-%         energy = obj.SCFEnergy(fockVec, densVec);
-%     end
+    % damping at the 2nd iteration
+    if(iter == 2)
+        dampingCoeff = 0.5;
+        fockVec = obj.Damping(dampingCoeff, fockVec, oldFockVec);
+        densVec = obj.Damping(dampingCoeff, densVec, oldDensVec);
+        energy = obj.DampedSCFEnergy(fockVec, densVec, dampingCoeff);
+    end
     
     % diis extrapolate Fock matrix
     cdiis20.Push(fockVec, densVec);
@@ -54,7 +54,7 @@ for iter = 1:obj.maxSCFIter
     end
     
     energySet(iter) = energy; %#ok
-%     disp(energy);
+    disp(energy);
     
     oldDensVec = densVec;
     orbital = obj.SolveFockVec(fockVec, inv_S_Half);

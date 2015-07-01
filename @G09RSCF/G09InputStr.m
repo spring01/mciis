@@ -1,7 +1,7 @@
 function fileStr = G09InputStr(info)
 printOrbAlpha = [];
 guessStr = [];
-if(isfield(info, orbAlpha))
+if(isfield(info, 'orbAlpha'))
     guessStr = ' guess=cards';
     printOrbAlpha = sprintf('%s\n', '(1e24.15)');
     for iOrb = 1:size(info.orbAlpha, 2)
@@ -11,7 +11,7 @@ if(isfield(info, orbAlpha))
     printOrbAlpha = [printOrbAlpha, sprintf('%d\n', 0)];
 end
 printOrbBeta = [];
-if(isfield(info, orbBeta))
+if(isfield(info, 'orbBeta'))
     for iOrb = 1:size(info.orbBeta, 2)
         printOrbBeta = [printOrbBeta, sprintf('%d\n', iOrb)]; %#ok
         printOrbBeta = [printOrbBeta, sprintf('%24.15e\n', info.orbBeta(:, iOrb))]; %#ok
