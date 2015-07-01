@@ -3,7 +3,11 @@ info.cartesian = [...
     8 0.0 0.0 0.0
     1 0.0 0.0 1.0
     1 0.0 1.0 0.0];
-info.method = 'b3lyp';
-info.basisSet = 'sto-3g';
+info.method = 'hf';
+info.basisSet = '6-31g*';
 
-G09RSCF(info)
+scf = G09RSCF(info);
+[guessDensity, guessOrbital] = scf.CoreGuess();
+
+[ener1, energySet1, iter1] = scf.SCF(guessOrbital, 'C20');
+

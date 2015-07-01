@@ -5,8 +5,8 @@
 
 cart = [...
     8 0.0 0.0 0.0
-    1 0.0 0.0 1.0
-    1 0.0 1.0 0.0];
+    1 0.0 1.0 0.0
+    1 0.0 0.0 1.0];
 
 % cart = [...
 %  14                -1.55096010   -0.68685376    0.00000000
@@ -49,13 +49,13 @@ cart = [...
 % 8                   1.237979   -0.276996   -0.000002];
 
 mol = Molecule(cart);
-basisSet = '6-31g*';
+basisSet = '6-31g';
 dft = 'b3lyp';
 diisType = 'C20';
 
-matpsi = MatPsi2(mol.cartesian, basisSet, 0, 3);
-% scf = UHF(RHF.MatPsi2Interface(matpsi));
-scf = UKS(RHF.MatPsi2Interface(matpsi), dft);
+matpsi = MatPsi2(mol.cartesian, basisSet, 0, 1);
+scf = RHF(RHF.MatPsi2Interface(matpsi));
+% scf = RKS(RHF.MatPsi2Interface(matpsi), dft);
 [guessDensity, guessOrbital] = scf.CoreGuess();
 
 [ener1, energySet1, iter1] = scf.SCF(guessOrbital, diisType);

@@ -1,6 +1,6 @@
 classdef G09RSCF < RHF
     
-    properties (Access = protected)
+    properties %(Access = protected)
         
         info;
         
@@ -14,7 +14,7 @@ classdef G09RSCF < RHF
             properties.overlapMat = matrices{1};
             properties.coreHamilt = matrices{2};
             scalars = G09RSCF.G09ReadScalars({'NumElectrons', 'NucRepEnergy'});
-            properties.numElectrons = scalars{1};
+            properties.numElectrons = 2*scalars{1}(1);
             properties.nucRepEnergy = scalars{2};
             properties.matpsi2 = [];
             obj@RHF(properties);
@@ -32,11 +32,19 @@ classdef G09RSCF < RHF
             fockVec = reshape(matrices{1}, [], 1);
         end
         
-        function elecEnergy = SCFEnergy(obj, fockVec, densVec)
-            G09RSCF.RunG09(obj.info);
+        function energy = SCFEnergy(obj, fockVec, densVec)
+            scalars = G09RSCF.G09ReadScalars({'totalEnergy'});
+            energy = scalars{1};
         end
         
-        
+        function energy = DampedSCFEnergy(obj, fockVec, densVec, dampingCoeff, guessOrbital)
+            info_ = obj.info;
+            info_.orbAlpha = guessOrbital;
+            info_.dampingCoeff = dampingCoeff;
+            G09RSCF.RunG09(info_);
+            scalars = G09RSCF.G09ReadScalars({'dampedEnergy'});
+            energy = scalars{1}(1);
+        end
         
     end
     

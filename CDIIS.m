@@ -6,6 +6,7 @@ classdef CDIIS < handle
         errorVectors;
         
         S_Half;
+        inv_S_Half;
         
     end
     
@@ -29,6 +30,7 @@ classdef CDIIS < handle
             end
             
             obj.S_Half = sqrtm(overlapMatrix);
+            obj.inv_S_Half = obj.S_Half \ eye(size(obj.S_Half));
         end
         
         function Push(obj, newFockVector, newDensVector)
@@ -42,8 +44,8 @@ classdef CDIIS < handle
             obj.errorVectors(:, 1:end-1) = obj.errorVectors(:, 2:end);
             errorVec = [];
             for spin = 1:length(obj.fockVectors)
-                FtDt = obj.S_Half ...
-                    \ reshape(newFockVector(:, spin), sqrt(length(newFockVector(:, spin))), []) ...
+                FtDt = obj.inv_S_Half ...
+                    * reshape(newFockVector(:, spin), sqrt(length(newFockVector(:, spin))), []) ...
                     * reshape(newDensVector(:, spin), sqrt(length(newDensVector(:, spin))), []) ...
                     * obj.S_Half;
                 errorVec = [errorVec; reshape(FtDt - FtDt', [], 1)]; %#ok

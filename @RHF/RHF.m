@@ -65,7 +65,7 @@ classdef RHF < handle
             energy = (reshape(obj.coreHamilt, [], 1) + fockVec)'*densVec + obj.nucRepEnergy;
         end
         
-        function energy = DampedSCFEnergy(obj, fockVec, densVec, ~)
+        function energy = DampedSCFEnergy(obj, fockVec, densVec, ~, ~)
             energy = obj.SCFEnergy(fockVec, densVec);
         end
         

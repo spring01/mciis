@@ -7,6 +7,9 @@ densVec = obj.OrbToDensVec(orbital);
 cdiis20 = obj.CDIIS(20);
 ediis20 = obj.EDIIS(20);
 mciis20 = obj.MCIIS(20);
+cdiis6 = obj.CDIIS(6);
+ediis6 = obj.EDIIS(6);
+mciis6 = obj.MCIIS(6);
 
 % initialize some variables
 energy = 0;
@@ -19,34 +22,47 @@ for iter = 1:obj.maxSCFIter
     fockVec = obj.OrbToFockVec(orbital);
     energy = obj.SCFEnergy(fockVec, densVec);
     
-    % damping at the 2nd iteration
-    if(iter == 2)
-        dampingCoeff = 0.25;
-        fockVec = obj.Damping(dampingCoeff, fockVec, oldFockVec);
-        densVec = obj.Damping(dampingCoeff, densVec, oldDensVec);
-        energy = obj.DampedSCFEnergy(fockVec, densVec, dampingCoeff);
-    end
+%     % damping at the 2nd iteration
+%     if(iter == 2)
+%         dampingCoeff = 0.25;
+%         fockVec = obj.Damping(dampingCoeff, fockVec, oldFockVec);
+%         densVec = obj.Damping(dampingCoeff, densVec, oldDensVec);
+%         energy = obj.DampedSCFEnergy(fockVec, densVec, dampingCoeff, guessOrbital);
+%     end
     
     % diis extrapolate Fock matrix
     cdiis20.Push(fockVec, densVec);
     ediis20.Push(fockVec, densVec, energy);
     mciis20.Push(fockVec, densVec);
+    cdiis6.Push(fockVec, densVec);
+    ediis6.Push(fockVec, densVec, energy);
+    mciis6.Push(fockVec, densVec);
     switch(diisType)
         case('ECmix20')
             [fockVec, maxErrSet] = ECmix(ediis20, cdiis20, maxErrSet, iter);
+        case('ECmix6')
+            [fockVec, maxErrSet] = ECmix(ediis6, cdiis6, maxErrSet, iter);
         case('C20')
             fockVec = cdiis20.OptFockVector();
             disp('cdiis(20)');
+        case('C6')
+            fockVec = cdiis6.OptFockVector();
+            disp('cdiis(6)');
         case('E20')
             fockVec = ediis20.OptFockVector();
             disp('ediis(20)')
         case('EC20')
             [fockVec, maxErrSet] = EC(ediis20, cdiis20, maxErrSet, iter);
+        case('EC6')
+            [fockVec, maxErrSet] = EC(ediis6, cdiis6, maxErrSet, iter);
         case('ECe20')
             fockVec = ECe(ediis20, cdiis20, abs(energy - oldEnergy));
         case('M20')
             fockVec = mciis20.OptFockVector();
             disp('mciis(20)');
+        case('M6')
+            fockVec = mciis6.OptFockVector();
+            disp('mciis(6)');
         case('EM20')
             [fockVec, maxErrSet] = EM(ediis20, cdiis20, mciis20, maxErrSet, iter);
         case('EMe20')
@@ -54,7 +70,7 @@ for iter = 1:obj.maxSCFIter
     end
     
     energySet(iter) = energy; %#ok
-    disp(energy);
+%     disp(energy);
     
     oldDensVec = densVec;
     orbital = obj.SolveFockVec(fockVec, inv_S_Half);
