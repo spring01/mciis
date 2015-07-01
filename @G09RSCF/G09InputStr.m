@@ -1,6 +1,6 @@
 function fileStr = G09InputStr(info)
 printOrbAlpha = [];
-guessStr = [];
+guessStr = ' guess=core';
 if(isfield(info, 'orbAlpha'))
     guessStr = ' guess=cards';
     printOrbAlpha = sprintf('%s\n', '(1e24.15)');
@@ -18,8 +18,17 @@ if(isfield(info, 'orbBeta'))
     end
 end
 
+maxCycle = '1';
+dampingNum = 100;
+if(isfield(info, 'dampingCoeff'))
+    maxCycle = '2';
+    dampingNum = (1 - info.dampingCoeff) * 100;
+end
+
 newLine = sprintf('\n');
-printCommand = sprintf('%s\n', ['#p ', info.method, '/', info.basisSet , guessStr,' symmetry=none population=full scf(maxcycle=1, NoVarAcc) iop(5/33=3) iop(3/33=1) iop(5/13=1)']);
+printCommand = sprintf('%s\n', ['#p ', info.method, '/', info.basisSet , guessStr, ...
+    ' symmetry=none population=full scf(NoVarAcc) iop(5/33=3) iop(3/33=1) iop(5/13=1)', ...
+    ' scf(maxcycle=', maxCycle, ') iop(5/18=', num2str(dampingNum), ')']);
 printTitle = sprintf('%s\n', 'iop(5/33=3): print fock; iop(3/33=1): print 1-e integrals; iop(5/13=1): do not terminate when scf fails');
 printMol = sprintf('%d %d\n', info.chargeMult);
 for iAtom = 1:size(info.cartesian, 1)

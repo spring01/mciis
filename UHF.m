@@ -50,8 +50,8 @@ classdef UHF < RHF
             end
         end
         
-        function elecEnergy = SCFEnergy(obj, fockVec, densVec)
-            elecEnergy = (reshape(obj.coreHamilt, [], 1)' * sum(densVec, 2) ...
+        function energy = SCFEnergy(obj, fockVec, densVec)
+            energy = (reshape(obj.coreHamilt, [], 1)' * sum(densVec, 2) ...
                 + fockVec(:, 1)' * densVec(:, 1) ...
                 + fockVec(:, 2)' * densVec(:, 2)) / 2 + obj.nucRepEnergy;
         end

@@ -21,7 +21,7 @@ for iter = 1:obj.maxSCFIter
     
     % damping at the 2nd iteration
     if(iter == 2)
-        dampingCoeff = 0.5;
+        dampingCoeff = 0.25;
         fockVec = obj.Damping(dampingCoeff, fockVec, oldFockVec);
         densVec = obj.Damping(dampingCoeff, densVec, oldDensVec);
         energy = obj.DampedSCFEnergy(fockVec, densVec, dampingCoeff);

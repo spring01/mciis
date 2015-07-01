@@ -1,6 +1,6 @@
 classdef RKS < RHF
     
-    properties (Access = protected)
+    properties %(Access = protected)
         
         previousV;
         currentV;
@@ -45,8 +45,7 @@ classdef RKS < RHF
             obj.matpsi2.DFT_DensToV(reshape(densVec, sqrt(numel(densVec)), []));
             dampedV = obj.currentV .* dampingCoeff + obj.previousV .* (1 - dampingCoeff);
             energy = (reshape(obj.coreHamilt, [], 1) + fockVec)'*densVec + obj.nucRepEnergy ...
-                - reshape(dampedV, 1, []) * densVec ...
-                + obj.matpsi2.DFT_EnergyXC();
+                - reshape(dampedV, 1, []) * densVec + obj.matpsi2.DFT_EnergyXC();
         end
         
     end

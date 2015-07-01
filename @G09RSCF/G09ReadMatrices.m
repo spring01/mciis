@@ -53,7 +53,6 @@ while(ischar(currLine))
             
             currLine = readLine;
         end
-        
     end
     currLine = fgetl(logFile);
 end
