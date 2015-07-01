@@ -1,28 +1,28 @@
-function matrix = G09ReadMatrix(matType)
-beginning = cell(1, length(matType));
-ending = cell(1, length(matType));
-for iMat = 1:length(matType)
-    if(strcmpi(matType{iMat}, 'overlap'))
+function matrices = G09ReadMatrices(types)
+beginning = cell(1, length(types));
+ending = cell(1, length(types));
+for iMat = 1:length(types)
+    if(strcmpi(types{iMat}, 'overlap'))
         beginning{iMat} = ' *** Overlap *** ';
         ending{iMat} = ' *** Kinetic Energy *** ';
-    elseif(strcmpi(matType{iMat}, 'coreHamilt'))
+    elseif(strcmpi(types{iMat}, 'coreHamilt'))
         beginning{iMat} = ' ****** Core Hamiltonian ****** ';
         ending{iMat} = ' SVDSVc ';
-    elseif(strcmpi(matType{iMat}, 'fockAlpha'))
+    elseif(strcmpi(types{iMat}, 'fockAlpha'))
         beginning{iMat} = ' Fock matrix \(alpha\):';
         ending{iMat} = ' Fock matrix \(beta\):';
-    elseif(strcmpi(matType{iMat}, 'fockBeta'))
+    elseif(strcmpi(types{iMat}, 'fockBeta'))
         beginning{iMat} = ' Fock matrix \(beta\):';
         ending{iMat} = ' E= ';
     end
 end
 
-matrix = {};
+matrices = {};
 
 logFile = fopen('temp.log');
 currLine = '';
 while(ischar(currLine))
-    for iMat = 1:length(matType)
+    for iMat = 1:length(types)
         blocks = {};
         iBlock = 0;
         if(~isempty(regexp(currLine, beginning{iMat}, 'ONCE')))
@@ -49,7 +49,7 @@ while(ischar(currLine))
             if(triu(currMat, 1) == 0)
                 currMat = currMat + currMat' - diag(diag(currMat));
             end
-            matrix{iMat} = currMat; %#ok
+            matrices{iMat} = currMat; %#ok
             
             currLine = readLine;
         end
