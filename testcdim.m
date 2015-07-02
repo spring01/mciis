@@ -19,5 +19,6 @@ dft = 'b3lyp';
 matpsi = MatPsi2(mol.cartesian, basisSet, 2, 1);
 % scf = RHF(RHF.MatPsi2Interface(matpsi));
 scf = RKS(RHF.MatPsi2Interface(matpsi), dft);
-scf.Run();
+output = scf.Run();
+scf.Plot(output);
 
