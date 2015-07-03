@@ -1,4 +1,4 @@
-function Plot(~, output)
+function Plot(obj, output)
 ener = output.ener;
 iter = output.iter;
 energySet = output.energySet;
@@ -13,7 +13,7 @@ end
 
 energyArray = [ener{:}];
 iterArray = [iter{:}];
-minEnergy = min(energyArray(iterArray~=100));
+minEnergy = min(energyArray(iterArray~=obj.maxSCFIter));
 
 figure();
 hold();

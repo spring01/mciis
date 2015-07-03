@@ -1,11 +1,5 @@
 classdef RHF < handle
     
-    properties (SetAccess = protected)
-        
-        energySet;
-        
-    end
-    
     properties (Access = protected)
         
         overlapMat;
@@ -14,7 +8,7 @@ classdef RHF < handle
         numElectrons;
         matpsi2;
         
-        maxSCFIter = 100;
+        maxSCFIter = 200;
         RMSDensityThreshold = 1e-8;
         MaxDensityThreshold = 1e-6;
         EnergyThreshold = 1e-6;
@@ -58,7 +52,26 @@ classdef RHF < handle
             fockMat = reshape(fockVec, sqrt(numel(fockVec)), []);
             [orbitalOtho, orbEigValues] = eig(inv_S_Half*fockMat*inv_S_Half);
             [orbEigValues, ascend_order] = sort(diag(orbEigValues));
-            orbital = inv_S_Half * orbitalOtho(:, ascend_order);
+            orbitalOtho = orbitalOtho(:, ascend_order);
+            
+            % orthogonalize
+            diffVec = [0; diff(orbEigValues)];
+            diffVec(abs(diffVec) < 1e-8) = 0;
+            indVec = 1:length(orbEigValues);
+            indStart = [1, indVec(diffVec~=0)];
+            for iUniqEVal = 1:length(indStart) - 1
+                indRange = indStart(iUniqEVal):indStart(iUniqEVal+1);
+                temp = orbitalOtho(:, indRange);
+                for iSubspace = 2:size(temp, 2)
+                    for jSubspace = 1:iSubspace-1
+                        temp(:, iSubspace) = temp(:, iSubspace) - (temp(:, iSubspace)'*temp(:, jSubspace)) .* temp(:, jSubspace);
+                    end
+                    temp(:, iSubspace) = temp(:, iSubspace) ./ norm(temp(:, iSubspace));
+                end
+                orbitalOtho(:, indRange) = temp;
+            end
+            
+            orbital = inv_S_Half * orbitalOtho;
         end
         
         function energy = SCFEnergy(obj, fockVec, densVec)

@@ -1,4 +1,4 @@
-classdef CDIIS < handle
+classdef LISTd < handle
     
     properties (Access = private)
         
@@ -12,7 +12,7 @@ classdef CDIIS < handle
     
     methods
         
-        function obj = CDIIS(overlapMatrix, numVectors, type)
+        function obj = LISTd(overlapMatrix, numVectors, type)
             if(nargin < 2)
                 numVectors = 5;
             end
@@ -24,9 +24,7 @@ classdef CDIIS < handle
                 obj.fockVectors{1} = zeros(lenVec, numVectors);
                 obj.errorVectors = zeros(lenVec, numVectors);
             elseif(strcmpi(type, 'u'))
-                obj.fockVectors{1} = zeros(lenVec, numVectors);
-                obj.fockVectors{2} = zeros(lenVec, numVectors);
-                obj.errorVectors = zeros(2*lenVec, numVectors);
+                throw(MException('LISTd:LISTd', 'not implemented yet'));
             end
             
             obj.S_Half = sqrtm(overlapMatrix);

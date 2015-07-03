@@ -6,14 +6,26 @@ for iMat = 1:length(types)
         beginning{iMat} = ' *** Overlap *** ';
         ending{iMat} = ' *** Kinetic Energy *** ';
     elseif(strcmpi(types{iMat}, 'coreHamilt'))
-        beginning{iMat} = ' ****** Core Hamiltonian ****** ';
-        ending{iMat} = ' SVDSVc ';
+%         beginning{iMat} = ' ****** Core Hamiltonian ****** ';
+%         ending{iMat} = ' SVDSVc ';
+%         ending{iMat} = ' Symmetry operations used ';
+        beginning{iMat} = ' Core hamiltonian \(alpha\):';
+        ending{iMat} = ' Core hamiltonian \(beta\):';
     elseif(strcmpi(types{iMat}, 'fockAlpha'))
         beginning{iMat} = ' Fock matrix \(alpha\):';
         ending{iMat} = ' Fock matrix \(beta\):';
     elseif(strcmpi(types{iMat}, 'fockBeta'))
         beginning{iMat} = ' Fock matrix \(beta\):';
         ending{iMat} = ' E= ';
+    elseif(strcmpi(types{iMat}, 'ecpInt'))
+        beginning{iMat} = ' ECP Integrals: ';
+        ending{iMat} = ' SVDSVc ';
+    elseif(strcmpi(types{iMat}, 'orbAlpha'))
+        beginning{iMat} = ' Alpha MO coefficients ';
+        ending{iMat} = ' Alpha density matrix ';
+    elseif(strcmpi(types{iMat}, 'HarrisGuess'))
+        beginning{iMat} = ' Guess MO coefficients:';
+        ending{iMat} = ' Leave Link ';
     end
 end
 

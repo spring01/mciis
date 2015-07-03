@@ -22,13 +22,13 @@ for iter = 1:obj.maxSCFIter
     fockVec = obj.OrbToFockVec(orbital);
     energy = obj.SCFEnergy(fockVec, densVec);
     
-    % damping at the 2nd iteration
-    if(iter == 2)
-        dampingCoeff = 0.25;
-        fockVec = obj.Damping(dampingCoeff, fockVec, oldFockVec);
-        densVec = obj.Damping(dampingCoeff, densVec, oldDensVec);
-        energy = obj.DampedSCFEnergy(fockVec, densVec, dampingCoeff, guessOrbital);
-    end
+%     % damping at the 2nd iteration
+%     if(iter == 2)
+%         dampingCoeff = 0.25;
+%         fockVec = obj.Damping(dampingCoeff, fockVec, oldFockVec);
+%         densVec = obj.Damping(dampingCoeff, densVec, oldDensVec);
+%         energy = obj.DampedSCFEnergy(fockVec, densVec, dampingCoeff, guessOrbital);
+%     end
     
     % diis extrapolate Fock matrix
     cdiis20.Push(fockVec, densVec);
@@ -72,11 +72,15 @@ for iter = 1:obj.maxSCFIter
     end
     
     energySet(iter) = energy; %#ok
-%     disp(energy);
+    fprintf('%0.8f\n',energy);
     
     oldDensVec = densVec;
     orbital = obj.SolveFockVec(fockVec, inv_S_Half);
     densVec = obj.OrbToDensVec(orbital);
+    
+    disp(mean(sqrt(mean((densVec - oldDensVec).^2))));
+    disp(mean(max(abs(densVec - oldDensVec))));
+    disp(abs(energy - oldEnergy));
     
     if(mean(sqrt(mean((densVec - oldDensVec).^2))) < obj.RMSDensityThreshold ...
             && mean(max(abs(densVec - oldDensVec))) < obj.MaxDensityThreshold ...

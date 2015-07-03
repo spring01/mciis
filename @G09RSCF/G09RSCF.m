@@ -1,6 +1,6 @@
 classdef G09RSCF < RHF
     
-    properties %(Access = protected)
+    properties (Access = protected)
         
         info;
         
@@ -19,6 +19,15 @@ classdef G09RSCF < RHF
             properties.matpsi2 = [];
             obj@RHF(properties);
             obj.info = info;
+        end
+        
+        function [densVec, orbital] = HarrisGuess(obj)
+            info_ = obj.info;
+            info_.harris = [];
+            G09RSCF.RunG09(info_);
+            matrices = G09RSCF.G09ReadMatrices({'HarrisGuess'});
+            orbital = matrices{1};
+            densVec = obj.OrbToDensVec(orbital);
         end
         
     end
@@ -60,7 +69,7 @@ classdef G09RSCF < RHF
             fclose(gjfFile);
             system('g09 temp.gjf');
             if(~G09RSCF.G09FileIsValid())
-                throw(MException('G09RSCF:G09RSCF', 'g09 did not terminate correctly'));
+                throw(MException('G09RSCF:RunG09', 'g09 did not terminate correctly'));
             end
         end
         
