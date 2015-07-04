@@ -99,6 +99,10 @@ classdef RHF < handle
             mciis = MCIIS(obj.overlapMat, numVectors, 'r');
         end
         
+        function listd = LISTd(obj, numVectors)
+            listd = LISTd(reshape(obj.coreHamilt, [], 1), numVectors, 'r');
+        end
+        
     end
     
     methods (Static)

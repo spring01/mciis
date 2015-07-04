@@ -10,6 +10,7 @@ mciis20 = obj.MCIIS(20);
 cdiis6 = obj.CDIIS(6);
 ediis6 = obj.EDIIS(6);
 mciis6 = obj.MCIIS(6);
+listd5 = obj.LISTd(10);
 
 % initialize some variables
 energy = 0;
@@ -37,6 +38,7 @@ for iter = 1:obj.maxSCFIter
     cdiis6.Push(fockVec, densVec);
     ediis6.Push(fockVec, densVec, energy);
     mciis6.Push(fockVec, densVec);
+    listd5.Push(fockVec, densVec, energy);
     switch(diisType)
         case('ECmix20')
             [fockVec, maxErrSet] = ECmix(ediis20, cdiis20, maxErrSet, iter);
@@ -69,6 +71,10 @@ for iter = 1:obj.maxSCFIter
             [fockVec, maxErrSet] = EM(ediis6, cdiis6, mciis6, maxErrSet, iter);
         case('EMe20')
             fockVec = EMe(ediis20, mciis20, abs(energy - oldEnergy));
+        case('LISTd5')
+            fockVec = listd5.OptFockVector();
+            listd5.PushFockIn(fockVec);
+            disp('listd(5)');
     end
     
     energySet(iter) = energy; %#ok

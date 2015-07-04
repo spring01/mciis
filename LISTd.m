@@ -2,63 +2,64 @@ classdef LISTd < handle
     
     properties (Access = private)
         
-        fockVectors;
-        errorVectors;
+        fockInVector;
+        fockOutVectors;
+        deltaFockVectors;
         
-        S_Half;
-        inv_S_Half;
+        densOutVectors;
+        energies;
         
     end
     
     methods
         
-        function obj = LISTd(overlapMatrix, numVectors, type)
+        function obj = LISTd(initialFockVec, numVectors, type)
             if(nargin < 2)
                 numVectors = 5;
             end
             if(nargin < 3)
                 type = 'r';
             end
-            lenVec = numel(overlapMatrix);
+            lenVec = numel(initialFockVec);
             if(strcmpi(type, 'r'))
-                obj.fockVectors{1} = zeros(lenVec, numVectors);
-                obj.errorVectors = zeros(lenVec, numVectors);
+                obj.fockOutVectors{1} = zeros(lenVec, numVectors);
+                obj.deltaFockVectors{1} = zeros(lenVec, numVectors);
+                obj.densOutVectors{1} = zeros(lenVec, numVectors);
             elseif(strcmpi(type, 'u'))
                 throw(MException('LISTd:LISTd', 'not implemented yet'));
             end
-            
-            obj.S_Half = sqrtm(overlapMatrix);
-            obj.inv_S_Half = inv(obj.S_Half);
+            obj.energies = zeros(numVectors, 1);
+            obj.fockInVector = initialFockVec;
         end
         
-        function Push(obj, newFockVector, newDensVector)
-            % push new Fock in
-            for spin = 1:length(obj.fockVectors)
-                obj.fockVectors{spin}(:, 1:end-1) = obj.fockVectors{spin}(:, 2:end);
-                obj.fockVectors{spin}(:, end) = newFockVector(:, spin);
+        function Push(obj, newFockOutVector, newDensOutVector, energy)
+            % push new Fock and density in
+            for spin = 1:length(obj.fockOutVectors)
+                obj.fockOutVectors{spin}(:, 1:end-1) = obj.fockOutVectors{spin}(:, 2:end);
+                obj.fockOutVectors{spin}(:, end) = newFockOutVector(:, spin);
+                
+                obj.densOutVectors{spin}(:, 1:end-1) = obj.densOutVectors{spin}(:, 2:end);
+                obj.densOutVectors{spin}(:, end) = 2*newDensOutVector(:, spin);
+                
+                obj.deltaFockVectors{spin}(:, 1:end-1) = obj.deltaFockVectors{spin}(:, 2:end);
+                obj.deltaFockVectors{spin}(:, end) = (newFockOutVector - obj.fockInVector) / 2;
             end
-            
-            % push new commutator error in
-            obj.errorVectors(:, 1:end-1) = obj.errorVectors(:, 2:end);
-            errorVec = [];
-            for spin = 1:length(obj.fockVectors)
-                FtDt = obj.inv_S_Half ...
-                    * reshape(newFockVector(:, spin), sqrt(length(newFockVector(:, spin))), []) ...
-                    * reshape(newDensVector(:, spin), sqrt(length(newDensVector(:, spin))), []) ...
-                    * obj.S_Half;
-                errorVec = [errorVec; reshape(FtDt - FtDt', [], 1)]; %#ok
-            end
-            obj.errorVectors(:, end) = errorVec;
+            obj.energies(1:end-1) = obj.energies(2:end);
+            obj.energies(end) = energy;
+        end
+        
+        function PushFockIn(obj, newFockInVector)
+            obj.fockInVector = newFockInVector;
         end
         
         function [optFockVector, coeffs, useFockVectors] = OptFockVector(obj)
-            useFockVectors = cell(1, length(obj.fockVectors));
-            optFockVector = zeros(size(obj.fockVectors{1}, 1), length(obj.fockVectors));
-            numVectors = sum(sum(obj.errorVectors.^2) ~= 0);
+            useFockVectors = cell(1, length(obj.fockOutVectors));
+            optFockVector = zeros(size(obj.fockOutVectors{1}, 1), length(obj.fockOutVectors));
+            numVectors = sum(sum(obj.fockOutVectors{1}.^2) ~= 0);
             if(numVectors == 0 || numVectors == 1)
-                for spin = 1:length(obj.fockVectors)
-                    optFockVector(:, spin) = obj.fockVectors{spin}(:, end);
-                    useFockVectors{spin} = obj.fockVectors{spin}(:, end);
+                for spin = 1:length(obj.fockOutVectors)
+                    optFockVector(:, spin) = obj.fockOutVectors{spin}(:, end);
+                    useFockVectors{spin} = obj.fockOutVectors{spin}(:, end);
                 end
                 if(length(useFockVectors) == 1)
                     useFockVectors = useFockVectors{1};
@@ -66,19 +67,35 @@ classdef LISTd < handle
                 coeffs = 1;
                 return;
             end
-            useErrorVectors = obj.errorVectors(:, end-numVectors+1:end);
-            for spin = 1:length(obj.fockVectors)
-                useFockVectors{spin} = obj.fockVectors{spin}(:, end-numVectors+1:end);
-            end
             
-            onesVec = ones(numVectors, 1);
+            useDeltaFockVectors = cell(1, length(obj.fockOutVectors));
+            useDensVectors = cell(1, length(obj.fockOutVectors));
+            for spin = 1:length(obj.fockOutVectors)
+                useDeltaFockVectors{spin} = obj.deltaFockVectors{spin}(:, end-numVectors+1:end);
+                useFockVectors{spin} = obj.fockOutVectors{spin}(:, end-numVectors+1:end);
+                useDensVectors{spin} = obj.densOutVectors{spin}(:, end-numVectors+1:end);
+            end
+            useEnergies = obj.energies(end-numVectors+1:end);
+            
+            hessian = zeros(numVectors, numVectors);
+            for spin = 1:length(obj.fockOutVectors)
+                for i = 1:numVectors
+                    for j = 1:numVectors
+                        hessian(i, j) = hessian(i, j) + useEnergies(i) ...
+                            + useDeltaFockVectors{spin}(:, i)' * (useDensVectors{spin}(:, j) - useDensVectors{spin}(:, i));
+                    end
+                end
+            end
+            hessian = hessian';
+            
+            onesVec = -ones(numVectors, 1);
             hessian = [ ...
-                useErrorVectors'*useErrorVectors, onesVec; ...
+                hessian, onesVec; ...
                 onesVec', 0];
-            diisCoefficients = hessian \ [zeros(numVectors,1); 1];
+            diisCoefficients = hessian \ [zeros(numVectors,1); -1];
             coeffs = diisCoefficients(1:end-1);
             
-            for spin = 1:length(obj.fockVectors)
+            for spin = 1:length(obj.fockOutVectors)
                 optFockVector(:, spin) = useFockVectors{spin} * coeffs;
             end
             
@@ -87,23 +104,6 @@ classdef LISTd < handle
             end
             
 %             disp(coeffs');
-        end
-        
-        function optFockVector = CalcFockVec(obj, coeffs, useFockVectors)
-            optFockVector = zeros(size(obj.fockVectors{1}, 1), length(obj.fockVectors));
-            if(length(obj.fockVectors) == 1)
-                newCell{1} = useFockVectors;
-                useFockVectors = newCell;
-            end
-            for spin = 1:length(obj.fockVectors)
-                optFockVector(:, spin) = useFockVectors{spin} * coeffs;
-            end
-            
-%             disp(coeffs');
-        end
-        
-        function maxError = MaxError(obj)
-            maxError = max(abs(obj.errorVectors(:, end)));
         end
         
     end

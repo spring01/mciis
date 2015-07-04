@@ -19,8 +19,8 @@ info.basisSet = 'genecp';
 info.ecpFile = 'uf4.ecp';
 
 scf = G09RSCF(info);
-[guessDensity, guessOrbital] = scf.HarrisGuess();
+[guessDensity, guessOrbital] = scf.CoreGuess();
 
-[ener1, energySet1, iter1] = scf.SCF(guessOrbital, 'C20');
+[ener1, energySet1, iter1] = scf.SCF(guessOrbital, 'LISTd5');
 
 fprintf('%0.8f  %d \n',ener1, iter1);
