@@ -7,6 +7,8 @@ classdef MCIIS < handle
         S_Half;
         inv_S_Half;
         
+        errorVectors;
+        
     end
     
     methods
@@ -22,11 +24,13 @@ classdef MCIIS < handle
             if(strcmpi(type, 'r'))
                 obj.fockVectors{1} = zeros(lenVec, numVectors);
                 obj.densVectors{1} = zeros(lenVec, numVectors);
+                obj.errorVectors = zeros(lenVec, numVectors);
             elseif(strcmpi(type, 'u'))
                 obj.fockVectors{1} = zeros(lenVec, numVectors);
                 obj.densVectors{1} = zeros(lenVec, numVectors);
                 obj.fockVectors{2} = zeros(lenVec, numVectors);
                 obj.densVectors{2} = zeros(lenVec, numVectors);
+                obj.errorVectors = zeros(2*lenVec, numVectors);
             end
             obj.S_Half = sqrtm(overlapMatrix);
             obj.inv_S_Half = obj.S_Half \ eye(size(obj.S_Half));
@@ -42,12 +46,36 @@ classdef MCIIS < handle
                 obj.densVectors{spin}(:, 1:end-1) = obj.densVectors{spin}(:, 2:end);
                 obj.densVectors{spin}(:, end) = newDensVector(:, spin);
             end
+            
+            % push new commutator error in
+            obj.errorVectors(:, 1:end-1) = obj.errorVectors(:, 2:end);
+            errorVec = [];
+            for spin = 1:length(obj.fockVectors)
+                FtDt = obj.inv_S_Half ...
+                    * reshape(newFockVector(:, spin), sqrt(length(newFockVector(:, spin))), []) ...
+                    * reshape(newDensVector(:, spin), sqrt(length(newDensVector(:, spin))), []) ...
+                    * obj.S_Half;
+                errorVec = [errorVec; reshape(FtDt - FtDt', [], 1)]; %#ok
+            end
+            obj.errorVectors(:, end) = errorVec;
         end
         
         function [optFockVector, coeffs, useFockVectors] = OptFockVector(obj)
+            numVectors = sum(sum(obj.densVectors{1}.^2) ~= 0);
+            [optFockVector, coeffs, useFockVectors] = obj.SolveForNumVectors(numVectors);
+            while(isnan(coeffs))
+                numVectors = numVectors - 1;
+                [optFockVector, coeffs, useFockVectors] = obj.SolveForNumVectors(numVectors);
+            end
+        end
+                
+    end
+    
+    methods (Access = private)
+        
+        function [optFockVector, coeffs, useFockVectors] = SolveForNumVectors(obj, numVectors)
             useFockVectors = cell(1, length(obj.fockVectors));
             optFockVector = zeros(size(obj.fockVectors{1}, 1), length(obj.fockVectors));
-            numVectors = sum(sum(obj.densVectors{1}.^2) ~= 0);
             if(numVectors == 0 || numVectors == 1)
                 for spin = 1:length(obj.fockVectors)
                     optFockVector(:, spin) = obj.fockVectors{spin}(:, end);
@@ -67,8 +95,16 @@ classdef MCIIS < handle
                 tensor = tensor + obj.CalcTensor(useFockVectors{spin}, useDensVectors{spin});
             end
             
-            iniCoeffs = zeros(numVectors, 1);
-            iniCoeffs(end) = 1;
+            useErrorVectors = obj.errorVectors(:, end-numVectors+1:end);
+            onesVec = ones(numVectors, 1);
+            hessian = [ ...
+                useErrorVectors'*useErrorVectors, onesVec; ...
+                onesVec', 0];
+            diisCoefficients = hessian \ [zeros(numVectors,1); 1];
+            iniCoeffs = diisCoefficients(1:end-1);
+            
+%             iniCoeffs = zeros(numVectors, 1);
+%             iniCoeffs(end) = 1;
             
             coeffs = obj.NewtonSolver(tensor, iniCoeffs);
             
@@ -81,10 +117,6 @@ classdef MCIIS < handle
             end
 %             disp(coeffs');
         end
-        
-    end
-    
-    methods (Access = private)
         
         function tensor = CalcTensor(obj, useFockVectors, useDensVectors)
             nbf = sqrt(size(useFockVectors, 1));
@@ -131,19 +163,30 @@ classdef MCIIS < handle
             
         end
         
-        function coeffs = NewtonSolver(obj, tensor, coeffs)
+        function coeffs = NewtonSolver(obj, tensor, iniCoeffs)
+            coeffs = iniCoeffs;
             for iter = 1:100
                 [val, grad, hess] = obj.Target(coeffs, tensor);
                 lambda = -4 * val;
                 gradL = [grad + lambda; 0];
-                if(sqrt(mean(gradL.^2)) < 1e-14)
-                    break;
-                end
                 onesVec = ones(length(coeffs), 1);
                 hessL = [hess, onesVec; onesVec', 0];
+%                 if(rcond(hessL) < 1e-20)
+%                     disp('Inversion failed')
+% %                     coeffs = iniCoeffs;
+%                     return;
+%                 end
                 coeffsAndLambda = [coeffs; lambda];
                 coeffsAndLambda = coeffsAndLambda - hessL \ gradL;
                 coeffs = coeffsAndLambda(1:end-1);
+                if(sqrt(mean(gradL.^2)) < 1e-12)
+                    return;
+                end
+            end
+            
+            if(iter > 99)
+                disp('Not converged');
+%                 coeffs = iniCoeffs;
             end
         end
         

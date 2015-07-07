@@ -14,7 +14,7 @@ classdef G09RSCF < RHF
             properties.overlapMat = matrices{1};
             properties.coreHamilt = matrices{2};
             scalars = G09RSCF.G09ReadScalars({'NumElectrons', 'NucRepEnergy'});
-            properties.numElectrons = 2*scalars{1}(1);
+            properties.numElectrons = scalars{1};
             properties.nucRepEnergy = scalars{2};
             properties.matpsi2 = [];
             obj@RHF(properties);
@@ -25,7 +25,7 @@ classdef G09RSCF < RHF
             info_ = obj.info;
             info_.harris = [];
             G09RSCF.RunG09(info_);
-            matrices = G09RSCF.G09ReadMatrices({'HarrisGuess'});
+            matrices = G09RSCF.G09ReadMatrices({'HarrisGuessMO'});
             orbital = matrices{1};
             densVec = obj.OrbToDensVec(orbital);
         end
@@ -57,10 +57,14 @@ classdef G09RSCF < RHF
         
     end
     
-    methods (Static, Access = protected)
+    methods (Static)
         
         scalars = G09ReadScalars(types);
         matrices = G09ReadMatrices(types);
+        
+    end
+    
+    methods (Static, Access = protected)
         
         function RunG09(info)
             fileStr = G09RSCF.G09InputStr(info);

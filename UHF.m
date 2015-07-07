@@ -4,15 +4,6 @@ classdef UHF < RHF
         
         function obj = UHF(properties)
             obj = obj@RHF(properties);
-            chargeMult = obj.matpsi2.Molecule_ChargeMult();
-            mult = chargeMult(2);
-            numTotalElectrons = obj.numElectrons;
-            numAlphaElectrons = (numTotalElectrons + mult - 1) / 2;
-            if(rem(numAlphaElectrons, 1) ~= 0)
-                throw(MException('UHF:UHF', 'Number of electrons and multiplicity do not agree'));
-            end
-            numBetaElectrons = numTotalElectrons - numAlphaElectrons;
-            obj.numElectrons = [numAlphaElectrons; numBetaElectrons];
         end
         
     end
@@ -70,6 +61,10 @@ classdef UHF < RHF
         
         function ediis = EDIIS(obj, numVectors)
             ediis = EDIIS(obj.coreHamilt, numVectors, 'u');
+        end
+        
+        function adiis = ADIIS(obj, numVectors)
+            adiis = ADIIS(obj.coreHamilt, numVectors, 'u');
         end
         
         function mciis = MCIIS(obj, numVectors)

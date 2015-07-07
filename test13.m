@@ -51,7 +51,7 @@ cart = [...
 mol = Molecule(cart);
 basisSet = '6-31g*';
 dft = 'svwn5';
-diisType = 'LISTd5';
+diisType = 'M20';
 
 matpsi = MatPsi2(mol.cartesian, basisSet, 0, 1);
 % matpsi.SCF_SetSCFType('uhf');

@@ -9,52 +9,75 @@ classdef ADIIS < handle
     
     methods
         
-        function obj = ADIIS(initVector, numVectors)
+        function obj = ADIIS(initVector, numVectors, type)
             if(nargin < 2)
                 numVectors = 5;
             end
-            obj.fockVectors = zeros(numel(initVector), numVectors);
-            obj.densVectors = zeros(numel(initVector), numVectors);
+            if(nargin < 3)
+                type = 'r';
+            end
+            lenVec = numel(initVector);
+            if(strcmpi(type, 'r'))
+                obj.fockVectors{1} = zeros(lenVec, numVectors);
+                obj.densVectors{1} = zeros(lenVec, numVectors);
+            elseif(strcmpi(type, 'u'))
+                obj.fockVectors{1} = zeros(lenVec, numVectors);
+                obj.densVectors{1} = zeros(lenVec, numVectors);
+                obj.fockVectors{2} = zeros(lenVec, numVectors);
+                obj.densVectors{2} = zeros(lenVec, numVectors);
+            end
         end
         
         function Push(obj, newFockVector, newDensVector)
-            % push in matrices or rows or columns
-            newFockVector = reshape(newFockVector, [], 1);
-            newDensVector = reshape(newDensVector, [], 1);
-            
-            % push new Fock in
-            obj.fockVectors(:, 1:end-1) = obj.fockVectors(:, 2:end);
-            obj.fockVectors(:, end) = newFockVector;
-            
-            % push new density in
-            obj.densVectors(:, 1:end-1) = obj.densVectors(:, 2:end);
-            obj.densVectors(:, end) = newDensVector;
+            for spin = 1:length(obj.fockVectors)
+                % push new Fock in
+                obj.fockVectors{spin}(:, 1:end-1) = obj.fockVectors{spin}(:, 2:end);
+                obj.fockVectors{spin}(:, end) = newFockVector(:, spin);
+                
+                % push new density in
+                obj.densVectors{spin}(:, 1:end-1) = obj.densVectors{spin}(:, 2:end);
+                obj.densVectors{spin}(:, end) = newDensVector(:, spin);
+            end
         end
         
-        function newFockVector = Interpolate(obj)
-            [useFockVectors, coeffs] = obj.FockCoeffs;
-            newFockVector = useFockVectors * coeffs;
-        end
-        
-        function [useFockVectors, coeffs] = FockCoeffs(obj)
-            numVectors = sum(sum(obj.densVectors.^2) ~= 0);
+        function [optFockVector, coeffs, useFockVectors] = OptFockVector(obj)
+            useFockVectors = cell(1, length(obj.fockVectors));
+            optFockVector = zeros(size(obj.fockVectors{1}, 1), length(obj.fockVectors));
+            numVectors = sum(sum(obj.densVectors{1}.^2) ~= 0);
             if(numVectors == 0 || numVectors == 1)
-                useFockVectors = obj.fockVectors(:, end);
+                for spin = 1:length(obj.fockVectors)
+                    optFockVector(:, spin) = obj.fockVectors{spin}(:, end);
+                    useFockVectors{spin} = obj.fockVectors{spin}(:, end);
+                end
+                if(length(useFockVectors) == 1)
+                    useFockVectors = useFockVectors{1};
+                end
                 coeffs = 1;
                 return;
             end
-            useFockVectors = obj.fockVectors(:, end-numVectors+1:end);
-            useDensVectors = obj.densVectors(:, end-numVectors+1:end);
+            useDensVectors = cell(1, length(obj.fockVectors));
+            for spin = 1:length(obj.fockVectors)
+                useFockVectors{spin} = obj.fockVectors{spin}(:, end-numVectors+1:end);
+                useDensVectors{spin} = obj.densVectors{spin}(:, end-numVectors+1:end);
+            end
             
+            errorFockVectors = cell(1, length(obj.fockVectors));
+            errorDensVectors = cell(1, length(obj.fockVectors));
             % compute errors wrt. the latest Fock or density
-            errorFockVectors = useFockVectors - ...
-                repmat(useFockVectors(:,end), 1, numVectors);
-            errorDensVectors = useDensVectors - ...
-                repmat(useDensVectors(:,end), 1, numVectors);
+            for spin = 1:length(obj.fockVectors)
+                errorFockVectors{spin} = useFockVectors{spin} - ...
+                    repmat(useFockVectors{spin}(:,end), 1, numVectors);
+                errorDensVectors{spin} = useDensVectors{spin} - ...
+                    repmat(useDensVectors{spin}(:,end), 1, numVectors);
+            end
             
             % first order term and Hessian
-            firstOrder = 2.*(useFockVectors(:, end)'*errorDensVectors)';
-            hessian = errorFockVectors'*errorDensVectors;
+            firstOrder = zeros(numVectors, 1);
+            hessian = zeros(numVectors, numVectors);
+            for spin = 1:length(obj.fockVectors)
+                firstOrder = firstOrder + 2.*(useFockVectors{spin}(:, end)'*errorDensVectors{spin})';
+                hessian = hessian + errorFockVectors{spin}'*errorDensVectors{spin};
+            end
             hessian = hessian + hessian'; % multiply Hessian by 2 and cancels numerical error
             
             options = optimoptions('quadprog', 'Algorithm', 'active-set', 'Display', 'off');
@@ -64,65 +87,15 @@ classdef ADIIS < handle
                 [], [], ...
                 [], options);
             
-%             disp(coeffs');
-        end
-        
-    end
-    
-    methods (Access = private)
-        
-        function num = NumVectors(obj)
-            num = size(obj.fockVectors, 2);
-        end
-        
-        function varFull = ReducedGradient(obj, hessian, firstOrder, iniPoint)
-            indDep = 1;
-            indAct = 1:obj.NumVectors();
-            indAct = indAct(indAct~=indDep);
-            varFull = iniPoint;
-            constr = ones(1, obj.NumVectors());
-            for iter = 1:2000
-                varDep = varFull(indDep);
-                varAct = varFull(indAct);
-                constrDep = constr(indDep);
-                constrAct = constr(indAct);
-                
-                grad = firstOrder + hessian*varFull;
-                gradDep = grad(indDep);
-                gradAct = grad(indAct);
-                
-                redGrad = gradAct - constrAct'/constrDep*gradDep;
-                
-                delVarAct = zeros(obj.NumVectors()-1,1);
-                delVarAct(redGrad<0) = -redGrad(redGrad<0);
-                delVarAct(varAct>0) = -redGrad(varAct>0);
-                
-                if(norm(delVarAct) < 1e-8)
-                    break;
-                end
-                
-                stepSize = 2 ./ (2 + iter);
-                varActSim = varAct + stepSize .* delVarAct;
-                delVarAct(varActSim<0) = 0;
-                
-                delVarDep = - constrDep \ constrAct * delVarAct;
-                varDepSim = varDep + stepSize .* delVarDep;
-                
-                if(varDepSim < 0)
-                    strPos = indAct(varActSim>0);
-                    indDep = strPos(1);
-                    indAct = 1:obj.NumVectors();
-                    indAct = indAct(indAct~=indDep);
-                    continue;
-                end
-                
-                delVarFull = zeros(obj.NumVectors(), 1);
-                delVarFull(indDep) = delVarDep;
-                delVarFull(indAct) = delVarAct;
-                
-                varFull = varFull + stepSize .* delVarFull;
-                
+            for spin = 1:length(obj.fockVectors)
+                optFockVector(:, spin) = useFockVectors{spin} * coeffs;
             end
+            
+            if(length(useFockVectors) == 1)
+                useFockVectors = useFockVectors{1};
+            end
+            
+%             disp(coeffs');
         end
         
     end

@@ -30,7 +30,7 @@ end
 newLine = sprintf('\n');
 printCommand = sprintf('%s\n', ['#p ', info.method, '/', info.basisSet , guessStr, ...
     ' symmetry=none population=full scf(NoVarAcc) iop(5/33=3) iop(3/33=1) iop(5/13=1)', ...
-    ' scf(maxcycle=', maxCycle, ') iop(5/18=', num2str(dampingNum), ') IOp(4/6=200000000)']);
+    ' scf(maxcycle=', maxCycle, ') iop(5/18=', num2str(dampingNum), ') IOp(4/6=200000000) IOp(5/14=1)']);
 printTitle = sprintf('%s\n', 'iop(5/33=3): print fock; iop(3/33=1): print 1-e integrals; iop(5/13=1): do not terminate when scf fails');
 printMol = sprintf('%d %d\n', info.chargeMult);
 for iAtom = 1:size(info.cartesian, 1)

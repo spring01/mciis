@@ -1,4 +1,4 @@
-function [energy, energySet, iter] = SCF(obj, guessOrbital, diisType)
+function [energy, energySet, iter, orbital] = SCF(obj, guessOrbital, diisType)
 inv_S_Half = eye(size(obj.overlapMat)) / sqrtm(obj.overlapMat);
 orbital = guessOrbital;
 densVec = obj.OrbToDensVec(orbital);
@@ -11,6 +11,9 @@ cdiis6 = obj.CDIIS(6);
 ediis6 = obj.EDIIS(6);
 mciis6 = obj.MCIIS(6);
 listd5 = obj.LISTd(10);
+
+adiis20 = obj.ADIIS(20);
+edftdiis20 = obj.EDIIS(20);
 
 % initialize some variables
 energy = 0;
@@ -38,12 +41,14 @@ for iter = 1:obj.maxSCFIter
     cdiis6.Push(fockVec, densVec);
     ediis6.Push(fockVec, densVec, energy);
     mciis6.Push(fockVec, densVec);
-    listd5.Push(fockVec, densVec, energy);
+    adiis20.Push(fockVec, densVec);
+    edftdiis20.Push(fockVec, densVec, energy);
+%     listd5.Push(fockVec, densVec, energy);
     switch(diisType)
         case('ECmix20')
-            [fockVec, maxErrSet] = ECmix(ediis20, cdiis20, maxErrSet, iter);
+            [fockVec, maxErrSet] = ECmix(ediis20, cdiis20, cdiis20.MaxError(), maxErrSet, iter);
         case('ECmix6')
-            [fockVec, maxErrSet] = ECmix(ediis6, cdiis6, maxErrSet, iter);
+            [fockVec, maxErrSet] = ECmix(ediis6, cdiis6, cdiis20.MaxError(), maxErrSet, iter);
         case('C20')
             fockVec = cdiis20.OptFockVector();
             disp('cdiis(20)');
@@ -53,10 +58,13 @@ for iter = 1:obj.maxSCFIter
         case('E20')
             fockVec = ediis20.OptFockVector();
             disp('ediis(20)')
+        case('E6')
+            fockVec = ediis6.OptFockVector();
+            disp('ediis(6)')
         case('EC20')
-            [fockVec, maxErrSet] = EC(ediis20, cdiis20, maxErrSet, iter);
+            [fockVec, maxErrSet] = EC(ediis20, cdiis20, cdiis20.MaxError(), maxErrSet, iter);
         case('EC6')
-            [fockVec, maxErrSet] = EC(ediis6, cdiis6, maxErrSet, iter);
+            [fockVec, maxErrSet] = EC(ediis6, cdiis6, cdiis20.MaxError(), maxErrSet, iter);
         case('ECe20')
             fockVec = ECe(ediis20, cdiis20, abs(energy - oldEnergy));
         case('M20')
@@ -66,15 +74,26 @@ for iter = 1:obj.maxSCFIter
             fockVec = mciis6.OptFockVector();
             disp('mciis(6)');
         case('EM20')
-            [fockVec, maxErrSet] = EM(ediis20, cdiis20, mciis20, maxErrSet, iter);
+            [fockVec, maxErrSet] = EC(ediis20, mciis20, cdiis20.MaxError(), maxErrSet, iter);
         case('EM6')
-            [fockVec, maxErrSet] = EM(ediis6, cdiis6, mciis6, maxErrSet, iter);
+            [fockVec, maxErrSet] = EC(ediis6, mciis6, cdiis20.MaxError(), maxErrSet, iter);
         case('EMe20')
-            fockVec = EMe(ediis20, mciis20, abs(energy - oldEnergy));
+            fockVec = ECe(ediis20, mciis20, abs(energy - oldEnergy));
         case('LISTd5')
             fockVec = listd5.OptFockVector();
             listd5.PushFockIn(fockVec);
             disp('listd(5)');
+        case('A20')
+            fockVec = adiis20.OptFockVector();
+            disp('adiis(20)')
+        case('AC20')
+            [fockVec, maxErrSet] = EC(adiis20, cdiis20, cdiis20.MaxError(), maxErrSet, iter);
+        case('ACe20')
+            fockVec = ECe(adiis20, cdiis20, abs(energy - oldEnergy));
+        case('AM20')
+            [fockVec, maxErrSet] = EC(adiis20, mciis20, cdiis20.MaxError(), maxErrSet, iter);
+        case('AMe20')
+            fockVec = ECe(adiis20, mciis20, abs(energy - oldEnergy));
     end
     
     energySet(iter) = energy; %#ok
@@ -94,14 +113,17 @@ for iter = 1:obj.maxSCFIter
         break;
     end
     
+%     if(abs(energy - oldEnergy) < 1e-9)
+%         break;
+%     end
+    
     disp(['done iter ', num2str(iter)])
 end
 
 end
 
 
-function [fockVec, maxErrSet] = ECmix(ediis, cdiis, maxErrSet, iter)
-maxErr = cdiis.MaxError();
+function [fockVec, maxErrSet] = ECmix(ediis, cdiis, maxErr, maxErrSet, iter)
 if(maxErr ~= 0)
     maxErrSet(iter) = maxErr;
 else
@@ -109,70 +131,42 @@ else
 end
 if(maxErr > 1e-1 || maxErr > 1.1 * min(maxErrSet))
     fockVec = ediis.OptFockVector();
-    disp('ediis')
+    disp(class(ediis));
 elseif(maxErr < 1e-4)
     fockVec = cdiis.OptFockVector();
-    disp('cdiis')
+    disp(class(cdiis));
 else
     [~, ediisCoeffs, ~] = ediis.OptFockVector();
     [~, cdiisCoeffs, fockVecSet] = cdiis.OptFockVector();
     coeffs = 10.*maxErr .* ediisCoeffs + (1 - 10.*maxErr) .* cdiisCoeffs;
     fockVec = cdiis.CalcFockVec(coeffs, fockVecSet);
-    disp('mix cdiis ediis');
+    disp(['mix ', class(ediis), ' ', class(cdiis)]);
 end
 end
 
-function [fockVec, maxErrSet] = EC(ediis, cdiis, maxErrSet, iter)
-maxErr = cdiis.MaxError();
+function [fockVec, maxErrSet] = EC(ediis, cdiis, maxErr, maxErrSet, iter)
 if(maxErr ~= 0)
     maxErrSet(iter) = maxErr;
 else
     maxErrSet(iter) = 1;
 end
-% if(maxErr > 1e-1 || maxErr > 1.1 * min(maxErrSet))
+% if(maxErr > 1e-5 || maxErr > 1.1 * min(maxErrSet))
 if(maxErr > 1e-2)
     fockVec = ediis.OptFockVector();
-    disp('ediis')
+    disp(class(ediis));
 else
     fockVec = cdiis.OptFockVector();
-    disp('cdiis')
+    disp(class(cdiis));
 end
 end
 
 function fockVec = ECe(ediis, cdiis, energyDiff)
-if(energyDiff > 1e-2)
+if(energyDiff > 1e-3)
     fockVec = ediis.OptFockVector();
-    disp('ediis')
+    disp(class(ediis));
 else
     fockVec = cdiis.OptFockVector();
-    disp('cdiis')
-end
-end
-
-function [fockVec, maxErrSet] = EM(ediis, cdiis, mciis, maxErrSet, iter)
-maxErr = cdiis.MaxError();
-if(maxErr ~= 0)
-    maxErrSet(iter) = maxErr;
-else
-    maxErrSet(iter) = 1;
-end
-% if(maxErr > 1e-1 || maxErr > 1.1 * min(maxErrSet))
-if(maxErr > 1e-2)
-    fockVec = ediis.OptFockVector();
-    disp('ediis')
-else
-    fockVec = mciis.OptFockVector();
-    disp('mciis')
-end
-end
-
-function fockVec = EMe(ediis, mciis, energyDiff)
-if(energyDiff > 1e-2)
-    fockVec = ediis.OptFockVector();
-    disp('ediis')
-else
-    fockVec = mciis.OptFockVector();
-    disp('mciis')
+    disp(class(cdiis));
 end
 end
 

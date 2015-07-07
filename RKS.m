@@ -25,7 +25,7 @@ classdef RKS < RHF
     methods (Access = protected)
         
         function fockVec = OrbToFockVec(obj, orbital)
-            occOrb = orbital(:, 1:obj.numElectrons/2);
+            occOrb = orbital(:, 1:obj.numElectrons(1));
             obj.previousV = obj.currentV;
             obj.currentV = obj.matpsi2.DFT_OccOrbToV(occOrb);
             gMat = 2 .* obj.matpsi2.JK_OccOrbToJ(occOrb) + obj.currentV;

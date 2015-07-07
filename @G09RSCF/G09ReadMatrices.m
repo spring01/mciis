@@ -23,9 +23,18 @@ for iMat = 1:length(types)
     elseif(strcmpi(types{iMat}, 'orbAlpha'))
         beginning{iMat} = ' Alpha MO coefficients ';
         ending{iMat} = ' Alpha density matrix ';
-    elseif(strcmpi(types{iMat}, 'HarrisGuess'))
+    elseif(strcmpi(types{iMat}, 'orbBeta'))
+        beginning{iMat} = ' Beta MO coefficients ';
+        ending{iMat} = ' Beta density matrix ';
+    elseif(strcmpi(types{iMat}, 'HarrisGuessMO'))
         beginning{iMat} = ' Guess MO coefficients:';
         ending{iMat} = ' Leave Link ';
+    elseif(strcmpi(types{iMat}, 'HarrisGuessMOAlpha'))
+        beginning{iMat} = ' Guess MO coefficients \(alpha\):';
+        ending{iMat} = ' Guess MO coefficients \(beta\):';
+    elseif(strcmpi(types{iMat}, 'HarrisGuessMOBeta'))
+        beginning{iMat} = ' Guess MO coefficients \(beta\):';
+        ending{iMat} = ' Initial guess ';
     end
 end
 

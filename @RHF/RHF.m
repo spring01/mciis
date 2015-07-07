@@ -8,10 +8,10 @@ classdef RHF < handle
         numElectrons;
         matpsi2;
         
-        maxSCFIter = 200;
+        maxSCFIter = 500;
         RMSDensityThreshold = 1e-8;
         MaxDensityThreshold = 1e-6;
-        EnergyThreshold = 1e-6;
+        EnergyThreshold = 1e-8;
         
     end
     
@@ -37,40 +37,22 @@ classdef RHF < handle
     methods (Access = protected)
         
         function densVec = OrbToDensVec(obj, orbital)
-            occOrb = orbital(:, 1:obj.numElectrons/2);
+            occOrb = orbital(:, 1:obj.numElectrons(1));
             densVec = reshape(occOrb * occOrb', [], 1);
         end
         
         function fockVec = OrbToFockVec(obj, orbital)
-            occOrb = orbital(:, 1:obj.numElectrons/2);
+            occOrb = orbital(:, 1:obj.numElectrons(1));
             gMat = 2 .* obj.matpsi2.JK_OccOrbToJ(occOrb) ...
                 - obj.matpsi2.JK_OccOrbToK(occOrb);
             fockVec = reshape(obj.coreHamilt, [], 1) + reshape(gMat, [], 1);
         end
         
-        function [orbital, orbEigValues] = SolveFockVec(~, fockVec, inv_S_Half)
+        function [orbital, orbEigValues] = SolveFockVec(obj, fockVec, inv_S_Half)
             fockMat = reshape(fockVec, sqrt(numel(fockVec)), []);
             [orbitalOtho, orbEigValues] = eig(inv_S_Half*fockMat*inv_S_Half);
             [orbEigValues, ascend_order] = sort(diag(orbEigValues));
-            orbitalOtho = orbitalOtho(:, ascend_order);
-            
-            % orthogonalize
-            diffVec = [0; diff(orbEigValues)];
-            diffVec(abs(diffVec) < 1e-8) = 0;
-            indVec = 1:length(orbEigValues);
-            indStart = [1, indVec(diffVec~=0)];
-            for iUniqEVal = 1:length(indStart) - 1
-                indRange = indStart(iUniqEVal):indStart(iUniqEVal+1);
-                temp = orbitalOtho(:, indRange);
-                for iSubspace = 2:size(temp, 2)
-                    for jSubspace = 1:iSubspace-1
-                        temp(:, iSubspace) = temp(:, iSubspace) - (temp(:, iSubspace)'*temp(:, jSubspace)) .* temp(:, jSubspace);
-                    end
-                    temp(:, iSubspace) = temp(:, iSubspace) ./ norm(temp(:, iSubspace));
-                end
-                orbitalOtho(:, indRange) = temp;
-            end
-            
+            orbitalOtho = obj.OrthDegenOrbitals(orbitalOtho(:, ascend_order), orbEigValues);
             orbital = inv_S_Half * orbitalOtho;
         end
         
@@ -95,6 +77,10 @@ classdef RHF < handle
             ediis = EDIIS(obj.coreHamilt, numVectors, 'r');
         end
         
+        function adiis = ADIIS(obj, numVectors)
+            adiis = ADIIS(obj.coreHamilt, numVectors, 'r');
+        end
+        
         function mciis = MCIIS(obj, numVectors)
             mciis = MCIIS(obj.overlapMat, numVectors, 'r');
         end
@@ -105,14 +91,45 @@ classdef RHF < handle
         
     end
     
+    methods (Access = private)
+        
+        function orbitalOtho = OrthDegenOrbitals(~, orbitalOtho, orbEigValues)
+            diffVec = [0; diff(orbEigValues)];
+            diffVec(abs(diffVec) < 1e-8) = 0;
+            indVec = 1:length(orbEigValues);
+            indStart = [1, indVec(diffVec~=0)];
+            for iUniqEVal = 1:length(indStart) - 1
+                indRange = indStart(iUniqEVal):indStart(iUniqEVal+1);
+                temp = orbitalOtho(:, indRange);
+                for iSubspace = 2:size(temp, 2)
+                    for jSubspace = 1:iSubspace-1
+                        temp(:, iSubspace) = temp(:, iSubspace) - (temp(:, iSubspace)'*temp(:, jSubspace)) .* temp(:, jSubspace);
+                    end
+                    temp(:, iSubspace) = temp(:, iSubspace) ./ norm(temp(:, iSubspace));
+                end
+                orbitalOtho(:, indRange) = temp;
+            end
+        end
+        
+    end
+    
     methods (Static)
                 
         function properties = MatPsi2Interface(matpsi2)
             properties.overlapMat = matpsi2.Integrals_Overlap();
             properties.coreHamilt = matpsi2.Integrals_Kinetic() + matpsi2.Integrals_Potential();
             properties.nucRepEnergy = matpsi2.Molecule_NucRepEnergy();
-            properties.numElectrons = matpsi2.Molecule_NumElectrons();
             properties.matpsi2 = matpsi2;
+            
+            chargeMult = matpsi2.Molecule_ChargeMult();
+            mult = chargeMult(2);
+            numTotalElectrons = matpsi2.Molecule_NumElectrons();
+            numAlphaElectrons = (numTotalElectrons + mult - 1) / 2;
+            if(rem(numAlphaElectrons, 1) ~= 0)
+                throw(MException('RHF:MatPsi2Interface', 'Number of electrons and multiplicity do not agree'));
+            end
+            numBetaElectrons = numTotalElectrons - numAlphaElectrons;
+            properties.numElectrons = [numAlphaElectrons; numBetaElectrons];
         end
         
     end
