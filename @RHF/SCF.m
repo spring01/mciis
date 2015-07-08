@@ -65,6 +65,8 @@ for iter = 1:obj.maxSCFIter
             [fockVec, maxErrSet] = EC(ediis20, cdiis20, cdiis20.MaxError(), maxErrSet, iter);
         case('EC6')
             [fockVec, maxErrSet] = EC(ediis6, cdiis6, cdiis20.MaxError(), maxErrSet, iter);
+        case('ECe6')
+            fockVec = ECe(ediis6, cdiis6, abs(energy - oldEnergy));
         case('ECe20')
             fockVec = ECe(ediis20, cdiis20, abs(energy - oldEnergy));
         case('M20')
@@ -77,6 +79,8 @@ for iter = 1:obj.maxSCFIter
             [fockVec, maxErrSet] = EC(ediis20, mciis20, cdiis20.MaxError(), maxErrSet, iter);
         case('EM6')
             [fockVec, maxErrSet] = EC(ediis6, mciis6, cdiis20.MaxError(), maxErrSet, iter);
+        case('EMe6')
+            fockVec = ECe(ediis6, mciis6, abs(energy - oldEnergy));
         case('EMe20')
             fockVec = ECe(ediis20, mciis20, abs(energy - oldEnergy));
         case('LISTd5')

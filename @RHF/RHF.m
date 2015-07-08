@@ -8,10 +8,10 @@ classdef RHF < handle
         numElectrons;
         matpsi2;
         
-        maxSCFIter = 500;
+        maxSCFIter = 200;
         RMSDensityThreshold = 1e-8;
         MaxDensityThreshold = 1e-6;
-        EnergyThreshold = 1e-8;
+        EnergyThreshold = 1e-6;
         
     end
     

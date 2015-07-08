@@ -1,7 +1,7 @@
 function output = Run(obj)
 [guessDensity, guessOrbital] = obj.CoreGuess();
 
-allTypes = {'C20', 'M20', 'ECe20', 'EMe20'};
+allTypes = {'C20', 'M20', 'ECe20', 'EMe20', 'ACe20', 'AMe20'};
 % allTypes = {'EMe20'};
 
 ener = cell(1, length(allTypes));
