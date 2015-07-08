@@ -4,9 +4,11 @@ basisSet = '6-31+g*';
 dft = 'b3lyp';
 diisType = 'C20';
 
-ener = zeros(length(molecules), 1);
-iter = zeros(length(molecules), 1);
-for ind = 1:length(molecules)
+totalNum = length(molecules);
+
+ener = zeros(totalNum, 1);
+iter = zeros(totalNum, 1);
+for ind = 1:totalNum
     cart = molecules{ind}.cartesian;
     
     mol = Molecule(cart);
@@ -24,9 +26,12 @@ for ind = 1:length(molecules)
     
     [guessDensity, guessOrbital] = scf.CoreGuess();
     [ener(ind), energySet1, iter(ind)] = scf.SCF(guessOrbital, diisType);
+    disp(ind);
 end
 
-
+output.ener = ener;
+output.iter = iter;
+save('nopert.mat', 'output');
 
 
 
