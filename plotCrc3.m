@@ -1,14 +1,22 @@
-function Plot(obj, output)
+
+
+load crc3Out.mat;
+output.energySet{1} = output.energySet{1}(1:140);
+output.energySet{5} = output.energySet{5}(1:140);
+
+maxSCFIter = 140;
 ener = output.ener;
 iter = output.iter;
 energySet = output.energySet;
 
 yellow = [255 215 0] ./ 255;
 darkBlue = [0 0 205] ./ 255;
+orange = [255 128 0] ./ 255;
+darkRed = [128 0 0] ./ 255;
 
 % shapes = {'s', 'o', 'v', '^', 'd', 'h', '<', '>'};
-shapes = {'o', 'v', 'o', 'v', 'o', 'v', 'o', 'v'};
-colors = {yellow, yellow, 'k', 'k', 'g', 'g', darkBlue, darkBlue};
+shapes = {'s', 'd', 's', 'd', 's', 'd'};
+colors = {yellow, 'k', 'g', darkBlue, orange, darkRed};
 
 for iType = 1:length(ener)
     fprintf('%0.8f  %d \n', ener{iType}, iter{iType});
@@ -16,7 +24,7 @@ end
 
 energyArray = [ener{:}];
 iterArray = [iter{:}];
-minEnergy = min(energyArray(iterArray~=obj.maxSCFIter));
+minEnergy = min(energyArray(iterArray~=maxSCFIter));
 
 hFig = figure();
 set(hFig, 'Position', [10 10 800 600])
@@ -24,7 +32,7 @@ hold();
 for iType = 1:length(ener)
     errorArray = log10(abs(energySet{iType} - minEnergy));
     errorArray(errorArray == -inf) = min(errorArray(errorArray ~= -inf));
-    plot(1:length(energySet{iType}), errorArray, ...
+    plot(1:4:length(energySet{iType}), errorArray(1:4:end), ...
         'LineWidth', 1.5, ...
         'Color', colors{iType}, ...
         'Marker', shapes{iType}, ...
@@ -35,13 +43,11 @@ end
 set(gca,'FontSize', 14)
 
 xlabel('Number of iterations', 'FontSize', 16);
-% ylabel('$\log_{10}(E_i - E_c)$', 'Interpreter', 'LaTex', 'FontSize', 16, 'FontName', 'Helvetica');
 ylabel('log_{10}|E_i - E_c|', 'FontSize', 16);
-legend('CDIIS(6)', 'CDIIS(20)', 'MCIIS(6)', 'MCIIS(20)', 'EDIIS+CDIIS(6)', 'EDIIS+CDIIS(20)', 'EDIIS+MCIIS(6)', 'EDIIS+MCIIS(20)', ...
-    'Location', 'SouthWest');
-% text(15, 0, 'CH_3CHO\nHF/6-31g(d)', 'FontSize', 16);
-% text(15, -1, 'HF/6-31g(d)', 'FontSize', 16) 
+lgd = legend('CDIIS(20)', 'MCIIS(20)', 'EDIIS+CDIIS(20)', 'EDIIS+MCIIS(20)', 'ADIIS+CDIIS(20)', 'ADIIS+MCIIS(20)', ...
+    'Location', 'SouthEast');
 
-print('./graphs/test.pdf', '-dpdf')
+outputFileName = './graphs/crc3.pdf';
+print(outputFileName, '-dpdf')
 
-end
+
