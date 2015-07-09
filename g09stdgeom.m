@@ -1,13 +1,13 @@
 rng(15213);
 
 
-numFiles = 100;
+numFiles = 103;
 molecules = cell(1, numFiles);
 for fileInd = 1:numFiles
-    str = fileread(['./geoms/gdb13rand/gdb13rand100-', sprintf('%03d', fileInd), '.xyz']);
+    str = fileread(['./geoms/gdb11rand/gdb11rand-', sprintf('%03d', fileInd), '.xyz']);
     
     cellStr = strsplit(str, '\n');
-    str = strjoin(cellStr(2:end), '\n');
+    str = strjoin(cellStr(3:end), '\n');
     mol = MoleculeOld(str);
     
     molCart = mol.cartesian;
@@ -41,8 +41,6 @@ for fileInd = 1:numFiles
     currLine = '';
     numOfNums = 6;
     while(ischar(currLine))
-        blocks = {};
-        iBlock = 1;
         if(~isempty(regexp(currLine, beginning, 'ONCE')))
             readLine = fgetl(logFile);
             readLine = fgetl(logFile);
@@ -58,14 +56,10 @@ for fileInd = 1:numFiles
                     end
                     rowNum = str2double(regexp(readLine, '[0-9]+', 'match', 'ONCE'));
                     currentBlock(rowNum, :) = numsInALine; %#ok
-                    blocks{iBlock} = currentBlock; %#ok
                 end
                 readLine = fgetl(logFile);
             end
-            currMat = [blocks{:}];
-            if(triu(currMat, 1) == 0)
-                currMat = currMat + currMat' - diag(diag(currMat));
-            end
+            currMat = currentBlock;
             
             currLine = readLine;
         end
@@ -74,6 +68,8 @@ for fileInd = 1:numFiles
     fclose(logFile);
     
     cart = currMat(:, [2, 4:end]);
+    currentBlock = [];
     molecules{fileInd} = Molecule(cart);
     disp(fileInd);
 end
+

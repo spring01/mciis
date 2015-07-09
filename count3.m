@@ -1,4 +1,4 @@
-load gdb13rand100g09std.mat
+load gdb11randpertstd.mat
 
 basisSet = '6-31+g*';
 dft = 'b3lyp';
@@ -13,15 +13,10 @@ for ind = 1:totalNum
     
     mol = Molecule(cart);
     
-    if(mod(sum(cart(:, 1)), 2) == 0)
-        matpsi = MatPsi2(mol.cartesian, basisSet, 0, 1);
-        matpsi.SCF_SetSCFType('rks');
-        scf = RKS(RHF.MatPsi2Interface(matpsi), dft);
-    else
-        matpsi = MatPsi2(mol.cartesian, basisSet, 0, 2);
-        matpsi.SCF_SetSCFType('uks');
-        scf = UKS(RHF.MatPsi2Interface(matpsi), dft);
-    end
+    matpsi = MatPsi2(mol.cartesian, basisSet, 0, 1);
+    matpsi.SCF_SetSCFType('rks');
+    matpsi.JK_Initialize('dfjk');
+    scf = RKS(RHF.MatPsi2Interface(matpsi), dft);
     
     
     [guessDensity, guessOrbital] = scf.CoreGuess();
@@ -31,7 +26,7 @@ end
 
 output.ener = ener;
 output.iter = iter;
-save('nopertC20.mat', 'output');
+save('pertC20.mat', 'output');
 
 
 
