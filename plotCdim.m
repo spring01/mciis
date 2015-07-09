@@ -1,4 +1,4 @@
-
+% SCF Done:  E(RB3LYP) =  -5667.00848042     A.U. after   20 cycles
 
 load cdimOut.mat;
 output.energySet{1} = output.energySet{1}(1:40);

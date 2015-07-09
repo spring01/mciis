@@ -1,8 +1,6 @@
-
+% SCF Done:  E(UB3LYP) =  -451.259790322     A.U. after  445 cycles
 
 load uf43Out.mat;
-% output.energySet{3} = output.energySet{3}(1:140);
-% output.energySet{4} = output.energySet{4}(1:140);
 
 maxSCFIter = 200;
 ener = output.ener(3:end);

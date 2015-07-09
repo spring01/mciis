@@ -1,4 +1,4 @@
-
+% SCF Done:  E(RS-VWN5) =  -290.457687571     A.U. after   24 cycles
 
 load sih3hOut.mat
 output.energySet{1} = output.energySet{1}(1:40);

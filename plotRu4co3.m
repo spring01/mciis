@@ -1,4 +1,4 @@
-
+% SCF Done:  E(UB3LYP) =  -488.737158509     A.U. after  124 cycles
 
 load ru4co3Out.mat;
 

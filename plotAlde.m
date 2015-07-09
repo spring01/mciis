@@ -1,4 +1,4 @@
-
+% SCF Done:  E(RB+HF-V5LYP) =  -153.741617377     A.U. after   16 cycles
 
 load aldeOut.mat;
 

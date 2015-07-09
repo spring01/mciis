@@ -1,4 +1,4 @@
-
+% SCF Done:  E(UB3LYP) =  -1082.22891131     A.U. after   26 cycles
 
 load crc3Out.mat;
 output.energySet{1} = output.energySet{1}(1:140);

@@ -1,4 +1,4 @@
-
+% SCF Done:  E(RB3LYP) =  -1082.11401606     A.U. after   35 cycles
 
 load crc1Out.mat;
 
